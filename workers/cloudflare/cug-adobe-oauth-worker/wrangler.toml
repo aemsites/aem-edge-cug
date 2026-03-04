@@ -1,0 +1,24 @@
+name = "cug-adobe-oauth-worker"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+
+[vars]
+ORIGIN_HOSTNAME = "main--cloudfare1--jckautzmann.aem.live"
+OAUTH_AUTHORIZE_URL = "https://ims-na1.adobelogin.com/ims/authorize/v2"
+OAUTH_TOKEN_URL = "https://ims-na1.adobelogin.com/ims/token/v3"
+OAUTH_LOGOUT_URL = "https://ims-na1.adobelogin.com/ims/logout/v1"
+OAUTH_REDIRECT_URI = "https://aem-cug-cloudfare-jck1.com/auth/callback"
+OAUTH_SCOPE = "openid,AdobeID,email,profile"
+OAUTH_CLIENT_ID = "aem-sites-cug"
+
+# Secrets (set via: wrangler secret put OAUTH_CLIENT_SECRET)
+# OAUTH_CLIENT_SECRET = "..."
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "a7cb2b4bb8f54391b7ae50fa1cd43749"
+
+# Uncomment to bind to your custom domain:
+# [routes]
+# pattern = "aem-cug-cloudfare-jck1.com/*"
+# zone_name = "aem-cug-cloudfare-jck1.com"
