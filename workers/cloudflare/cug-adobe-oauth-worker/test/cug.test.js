@@ -84,7 +84,7 @@ describe('cug', () => {
       expect(resp.status).toBe(200);
     });
 
-    it('denies access when user domain does not match any allowed group', async () => {
+    it('redirects to /403 when user domain does not match any allowed group', async () => {
       const session = { email: 'eve@evil.com', groups: ['evil.com'] };
       const resp = await checkCugAccess(
         originResponse({
@@ -94,9 +94,8 @@ describe('cug', () => {
         session, request, env,
       );
 
-      expect(resp.status).toBe(403);
-      const body = await resp.text();
-      expect(body).toBe('You cannot access this page.');
+      expect(resp.status).toBe(302);
+      expect(resp.headers.get('Location')).toBe('https://mysite.com/403');
     });
 
     it('handles whitespace in comma-separated groups', async () => {
@@ -124,6 +123,19 @@ describe('cug', () => {
 
       expect(resp.headers.get('x-aem-cug-required')).toBeNull();
       expect(resp.headers.get('x-aem-cug-groups')).toBeNull();
+    });
+
+    it('sets Cache-Control: private, no-store on granted responses', async () => {
+      const session = { email: 'alice@adobe.com', groups: ['adobe.com'] };
+      const resp = await checkCugAccess(
+        originResponse({
+          'x-aem-cug-required': 'true',
+          'x-aem-cug-groups': 'adobe.com',
+        }),
+        session, request, env,
+      );
+
+      expect(resp.headers.get('Cache-Control')).toBe('private, no-store');
     });
   });
 });

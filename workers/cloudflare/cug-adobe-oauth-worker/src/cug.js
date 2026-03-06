@@ -32,14 +32,13 @@ export async function checkCugAccess(originResponse, session, request, env) {
     const hasAccess = allowedGroups.some((g) => userGroups.includes(g));
 
     if (!hasAccess) {
-      return new Response('You cannot access this page.', {
-        status: 403,
-        headers: { 'Content-Type': 'text/plain' },
-      });
+      return Response.redirect(new URL('/403', request.url).href, 302);
     }
   }
 
-  return stripCugHeaders(originResponse);
+  const resp = stripCugHeaders(originResponse);
+  resp.headers.set('Cache-Control', 'private, no-store');
+  return resp;
 }
 
 /** Remove CUG headers before sending the response to the browser. */

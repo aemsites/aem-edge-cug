@@ -30,6 +30,7 @@ export function createMockEnv(overrides = {}) {
     OAUTH_REDIRECT_URI: 'https://mysite.com/auth/callback',
     OAUTH_SCOPE: 'openid,AdobeID,email,profile',
     OAUTH_LOGOUT_URL: 'https://ims.example.com/ims/logout/v1',
+    JWT_SECRET: 'test-jwt-secret',
     SESSIONS: createMockKV(),
     ...overrides,
   };

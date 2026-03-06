@@ -11,8 +11,9 @@
  */
 
 import { redirectToLogin, handleCallback } from './oauth.js';
-import { createSession, getSession, destroySession, sessionCookie, clearSessionCookie } from './session.js';
+import { createSession, getSession, sessionCookie, clearSessionCookie } from './session.js';
 import { checkCugAccess } from './cug.js';
+import { handlePortalRedirect } from './portal.js';
 
 const getExtension = (path) => {
   const basename = path.split('/').pop();
@@ -112,19 +113,18 @@ const handleRequest = async (request, env) => {
     const result = await handleCallback(request, env);
     if (result instanceof Response) return result;
 
-    const sessionId = await createSession(env, result.userInfo);
+    const token = await createSession(env, result.userInfo);
     return new Response(null, {
       status: 302,
       headers: {
         Location: result.originalUrl,
-        'Set-Cookie': sessionCookie(sessionId),
+        'Set-Cookie': sessionCookie(token),
       },
     });
   }
 
-  // Logout: destroy worker session and redirect to IMS logout
+  // Logout: clear session cookie and redirect to IMS logout
   if (url.pathname === '/auth/logout') {
-    await destroySession(request, env);
     const imsLogoutUrl = `${env.OAUTH_LOGOUT_URL}?client_id=${env.OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(url.origin + '/')}`;
     return new Response(null, {
       status: 302,
@@ -133,6 +133,15 @@ const handleRequest = async (request, env) => {
         'Set-Cookie': clearSessionCookie(),
       },
     });
+  }
+
+  // Portal redirect: authenticate then redirect based on group mapping
+  if (url.pathname === '/auth/portal') {
+    const session = await getSession(request, env);
+    if (!session) {
+      return redirectToLogin(request.url, env);
+    }
+    return handlePortalRedirect(session, request, env);
   }
 
   // RUM and media requests bypass authentication

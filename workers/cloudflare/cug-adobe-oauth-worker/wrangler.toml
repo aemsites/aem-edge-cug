@@ -11,8 +11,9 @@ OAUTH_REDIRECT_URI = "https://aem-cug-cloudfare-jck1.com/auth/callback"
 OAUTH_SCOPE = "openid,AdobeID,email,profile"
 OAUTH_CLIENT_ID = "aem-sites-cug"
 
-# Secrets (set via: wrangler secret put OAUTH_CLIENT_SECRET)
+# Secrets (set via: wrangler secret put <NAME>)
 # OAUTH_CLIENT_SECRET = "..."
+# JWT_SECRET = "..."
 
 [[kv_namespaces]]
 binding = "SESSIONS"

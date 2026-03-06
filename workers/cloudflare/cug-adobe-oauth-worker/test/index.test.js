@@ -72,12 +72,12 @@ describe('index (request routing)', () => {
 
       expect(resp.status).toBe(302);
       expect(resp.headers.get('Location')).toBe('https://mysite.com/members');
-      expect(resp.headers.get('Set-Cookie')).toContain('session=');
+      expect(resp.headers.get('Set-Cookie')).toContain('auth_token=');
     });
   });
 
   describe('auth logout', () => {
-    it('clears session and redirects to IMS logout', async () => {
+    it('clears cookie and redirects to IMS logout', async () => {
       const request = new Request('https://mysite.com/auth/logout');
       const resp = await worker.fetch(request, env);
 
@@ -120,19 +120,54 @@ describe('index (request routing)', () => {
         'x-aem-cug-groups': 'adobe.com',
       }));
 
-      const { createSession, sessionCookie } = await import('../src/session.js');
-      const sessionId = await createSession(env, {
+      const { createSession } = await import('../src/session.js');
+      const token = await createSession(env, {
         email: 'alice@adobe.com', name: 'Alice', groups: ['adobe.com'],
       });
 
       const request = new Request('https://mysite.com/members/page', {
-        headers: { Cookie: `session=${sessionId}` },
+        headers: { Cookie: `auth_token=${token}` },
       });
       const resp = await worker.fetch(request, env);
 
       expect(resp.status).toBe(200);
       const body = await resp.text();
       expect(body).toBe('<html>members</html>');
+    });
+  });
+
+  describe('portal redirect', () => {
+    it('redirects to IMS login when no session', async () => {
+      const request = new Request('https://mysite.com/auth/portal');
+      const resp = await worker.fetch(request, env);
+
+      expect(resp.status).toBe(302);
+      expect(resp.headers.get('Location')).toContain(env.OAUTH_AUTHORIZE_URL);
+    });
+
+    it('fetches mapping and redirects to matched page when session exists', async () => {
+      const mapping = JSON.stringify({
+        data: [{ group: 'adobe.com', url: '/members/adobe-portal' }],
+      });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(
+        new Response(mapping, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ));
+
+      const { createSession } = await import('../src/session.js');
+      const token = await createSession(env, {
+        email: 'alice@adobe.com', name: 'Alice', groups: ['adobe.com'],
+      });
+
+      const request = new Request('https://mysite.com/auth/portal', {
+        headers: { Cookie: `auth_token=${token}` },
+      });
+      const resp = await worker.fetch(request, env);
+
+      expect(resp.status).toBe(302);
+      expect(resp.headers.get('Location')).toBe('https://mysite.com/members/adobe-portal');
     });
   });
 
