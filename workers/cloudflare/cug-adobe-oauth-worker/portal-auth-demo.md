@@ -2,7 +2,16 @@
 
 Walkthrough of the main use cases for the Cloudflare CUG worker with Adobe IMS authentication.
 
-**Site URL:** `https://aem-cug-cloudfare-jck1.com`
+## URLs
+
+| Environment | URL |
+|-------------|-----|
+| AEM Author | https://author-p130360-e1560298.adobeaemcloud.com/ui#/aem/sites.html/content/cloudfare1 |
+| Closed User Groups | https://author-p130360-e1560298.adobeaemcloud.com/content/cloudfare1/closed-user-groups.html |
+| Group Mapping | https://author-p130360-e1560298.adobeaemcloud.com/content/cloudfare1/closed-user-groups-mapping.html |
+| Edge Delivery | https://main--cloudfare1--jckautzmann.aem.live/members |
+| Cloudflare CDN | https://aem-cug-cloudfare-jck1.com/members |
+| Log out | https://aem-cug-cloudfare-jck1.com/auth/logout |
 
 ---
 
