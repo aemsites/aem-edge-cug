@@ -10,11 +10,11 @@
  */
 
 const MAPPING_PATH = '/closed-user-groups-mapping.json';
-const FALLBACK_PATH = '/members';
+const FALLBACK_PATH = '/';
 
 /**
  * Fetches the group-to-URL mapping from the origin and redirects the user
- * to the page that matches their group. Falls back to /members when the
+ * to the page that matches their group. Falls back to / when the
  * mapping is unavailable or no group matches.
  */
 export async function handlePortalRedirect(session, request, env) {
@@ -25,7 +25,11 @@ export async function handlePortalRedirect(session, request, env) {
 
   let mapping;
   try {
-    const resp = await fetch(origin);
+    const headers = {};
+    if (env.ORIGIN_AUTHENTICATION) {
+      headers.authorization = `token ${env.ORIGIN_AUTHENTICATION}`;
+    }
+    const resp = await fetch(origin, { headers });
     if (!resp.ok) {
       return redirect(request, FALLBACK_PATH);
     }

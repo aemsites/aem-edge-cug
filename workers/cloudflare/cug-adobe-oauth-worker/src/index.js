@@ -4,16 +4,19 @@
  * Cloudflare Worker entry point for AEM Edge Delivery with CUG authentication.
  *
  * Routes:
- *   /auth/callback  — OAuth callback (exchanges code for tokens, creates session)
- *   /auth/logout    — Destroys session and logs out of Adobe IMS
- *   RUM / media     — Passed through to origin without auth
- *   Everything else — Proxied to origin, then CUG headers are checked
+ *   /auth/callback     — OAuth callback (exchanges code for tokens, creates session)
+ *   /auth/logout       — Destroys session and logs out of Adobe IMS
+ *   /auth/portal       — Redirects authenticated user based on group mapping
+ *   /auth/cug-headers  — Pushes CUG sheet entries to Config Service as headers
+ *   RUM / media        — Passed through to origin without auth
+ *   Everything else    — Proxied to origin, then CUG headers are checked
  */
 
 import { redirectToLogin, handleCallback } from './oauth.js';
 import { createSession, getSession, sessionCookie, clearSessionCookie } from './session.js';
 import { checkCugAccess } from './cug.js';
 import { handlePortalRedirect } from './portal.js';
+import { pushCugHeaders } from './admin.js';
 
 const getExtension = (path) => {
   const basename = path.split('/').pop();
@@ -62,9 +65,10 @@ async function proxyToOrigin(request, env, url) {
     req.headers.set('authorization', `token ${env.ORIGIN_AUTHENTICATION}`);
   }
 
+  // TODO: re-enable edge caching once a real domain with push invalidation is in place:
+  //   cf: { cacheEverything: true },
   let resp = await fetch(req, {
     method: req.method,
-    cf: { cacheEverything: true },
   });
   resp = new Response(resp.body, resp);
 
@@ -142,6 +146,28 @@ const handleRequest = async (request, env) => {
       return redirectToLogin(request.url, env);
     }
     return handlePortalRedirect(session, request, env);
+  }
+
+  // CUG headers: fetch CUG sheet from origin and push headers to Config Service
+  if (url.pathname === '/auth/cug-headers') {
+    const session = await getSession(request, env);
+    if (!session) {
+      return redirectToLogin(request.url, env);
+    }
+    try {
+      const result = await pushCugHeaders(env);
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('CUG headers update failed:', err.stack || err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   // RUM and media requests bypass authentication

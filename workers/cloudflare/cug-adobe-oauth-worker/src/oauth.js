@@ -76,7 +76,8 @@ export async function handleCallback(request, env) {
   }
 
   if (!code || !state) {
-    return new Response('Missing code or state parameter', { status: 400 });
+    // No OAuth params — likely a post-logout redirect from IMS. Send user home.
+    return Response.redirect(new URL('/', url).href, 302);
   }
 
   const stored = await env.SESSIONS.get(`pkce:${state}`, 'json');
