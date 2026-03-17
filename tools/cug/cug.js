@@ -1,0 +1,162 @@
+import DA_SDK from 'https://da.live/nx/utils/sdk.js';
+
+const DA_SOURCE_BASE = 'https://admin.da.live/source';
+const ADMIN_API_BASE = 'https://admin.hlx.page';
+const CUG_SHEET_PATH = 'closed-user-groups.json';
+const HEADER_CUG_REQUIRED = 'x-aem-cug-required';
+const HEADER_CUG_GROUPS = 'x-aem-cug-groups';
+
+function isCugHeader(key) {
+  return key === HEADER_CUG_REQUIRED || key === HEADER_CUG_GROUPS;
+}
+
+async function fetchCugSheet(org, repo, token) {
+  const url = `${DA_SOURCE_BASE}/${org}/${repo}/${CUG_SHEET_PATH}`;
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch CUG sheet: ${resp.status} ${resp.statusText}`);
+  }
+
+  const json = await resp.json();
+  return Array.isArray(json.data) ? json.data : [];
+}
+
+function transformToHeadersConfig(rows) {
+  const config = {};
+
+  for (const row of rows) {
+    const path = (row.url || '').trim();
+    if (!path || !path.startsWith('/')) continue;
+    if (config[path]) continue;
+
+    const headers = [];
+    const required = (row['cug-required'] || '').trim().toLowerCase();
+    if (required === 'true' || required === 'false') {
+      headers.push({ key: HEADER_CUG_REQUIRED, value: required });
+    }
+
+    const groups = (row['cug-groups'] || '').trim();
+    if (groups) {
+      headers.push({ key: HEADER_CUG_GROUPS, value: groups });
+    }
+
+    if (headers.length > 0) {
+      config[path] = headers;
+    }
+  }
+
+  return config;
+}
+
+async function fetchExistingNonCugHeaders(org, repo, token) {
+  const url = `${ADMIN_API_BASE}/config/${org}/aggregated/${repo}.json`;
+  const resp = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!resp.ok) {
+    if (resp.status === 404) return {};
+    const body = await resp.text().catch(() => '');
+    throw new Error(`Failed to read site config: ${resp.status} ${resp.statusText} ${body}`);
+  }
+
+  const config = await resp.json();
+  const existing = config.headers || {};
+  const filtered = {};
+
+  for (const [path, headerList] of Object.entries(existing)) {
+    const nonCug = Array.isArray(headerList)
+      ? headerList.filter((h) => !isCugHeader(h.key))
+      : [];
+    if (nonCug.length > 0) {
+      filtered[path] = nonCug;
+    }
+  }
+
+  return filtered;
+}
+
+function mergeHeaders(nonCugHeaders, cugHeaders) {
+  const merged = { ...nonCugHeaders };
+
+  for (const [path, cugList] of Object.entries(cugHeaders)) {
+    const existing = merged[path] || [];
+    merged[path] = [...existing, ...cugList];
+  }
+
+  return merged;
+}
+
+async function postHeaders(org, repo, headersConfig, token) {
+  const url = `${ADMIN_API_BASE}/config/${org}/sites/${repo}/headers.json`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(headersConfig),
+  });
+
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new Error(`Config Service POST failed: ${resp.status} ${resp.statusText} — ${body}`);
+  }
+}
+
+function renderUI(container, onRegenerate) {
+  const heading = document.createElement('h2');
+  heading.textContent = 'CUG Headers';
+
+  const description = document.createElement('p');
+  description.className = 'description';
+  description.textContent = 'Read the closed-user-groups sheet and push CUG headers to the Config Service.';
+
+  const button = document.createElement('button');
+  button.className = 'action-btn';
+  button.textContent = 'Regenerate CUG Headers';
+
+  const status = document.createElement('div');
+  status.className = 'status';
+
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    status.className = 'status loading';
+    status.textContent = 'Reading sheet and pushing headers…';
+
+    try {
+      const result = await onRegenerate();
+      status.className = 'status success';
+      status.textContent = `Done — ${result.cugPaths} CUG path(s) configured (${result.totalPaths} total header paths).`;
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  container.append(heading, description, button, status);
+}
+
+(async function init() {
+  const { context, token } = await DA_SDK;
+  const { org, repo } = context;
+
+  renderUI(document.body, async () => {
+    const rows = await fetchCugSheet(org, repo, token);
+    const cugHeaders = transformToHeadersConfig(rows);
+    const nonCugHeaders = await fetchExistingNonCugHeaders(org, repo, token);
+    const merged = mergeHeaders(nonCugHeaders, cugHeaders);
+
+    await postHeaders(org, repo, merged, token);
+
+    return {
+      cugPaths: Object.keys(cugHeaders).length,
+      totalPaths: Object.keys(merged).length,
+    };
+  });
+}());
