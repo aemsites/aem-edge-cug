@@ -10,8 +10,8 @@ function isCugHeader(key) {
   return key === HEADER_CUG_REQUIRED || key === HEADER_CUG_GROUPS;
 }
 
-async function fetchCugSheet(org, repo, token) {
-  const url = `${DA_SOURCE_BASE}/${org}/${repo}/${CUG_SHEET_PATH}`;
+async function fetchCugSheet(org, site, token) {
+  const url = `${DA_SOURCE_BASE}/${org}/${site}/${CUG_SHEET_PATH}`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -51,8 +51,8 @@ function transformToHeadersConfig(rows) {
   return config;
 }
 
-async function fetchExistingNonCugHeaders(org, repo, token) {
-  const url = `${ADMIN_API_BASE}/config/${org}/aggregated/${repo}.json`;
+async function fetchExistingNonCugHeaders(org, site, token) {
+  const url = `${ADMIN_API_BASE}/config/${org}/aggregated/${site}.json`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -90,8 +90,8 @@ function mergeHeaders(nonCugHeaders, cugHeaders) {
   return merged;
 }
 
-async function postHeaders(org, repo, headersConfig, token) {
-  const url = `${ADMIN_API_BASE}/config/${org}/sites/${repo}/headers.json`;
+async function postHeaders(org, site, headersConfig, token) {
+  const url = `${ADMIN_API_BASE}/config/${org}/sites/${site}/headers.json`;
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
@@ -144,15 +144,15 @@ function renderUI(container, onRegenerate) {
 
 (async function init() {
   const { context, token } = await DA_SDK;
-  const { org, repo } = context;
+  const { org, site } = context;
 
   renderUI(document.body, async () => {
-    const rows = await fetchCugSheet(org, repo, token);
+    const rows = await fetchCugSheet(org, site, token);
     const cugHeaders = transformToHeadersConfig(rows);
-    const nonCugHeaders = await fetchExistingNonCugHeaders(org, repo, token);
+    const nonCugHeaders = await fetchExistingNonCugHeaders(org, site, token);
     const merged = mergeHeaders(nonCugHeaders, cugHeaders);
 
-    await postHeaders(org, repo, merged, token);
+    await postHeaders(org, site, merged, token);
 
     return {
       cugPaths: Object.keys(cugHeaders).length,
