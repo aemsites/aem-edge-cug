@@ -113,11 +113,11 @@ function renderUI(container, onRegenerate) {
 
   const description = document.createElement('p');
   description.className = 'description';
-  description.textContent = 'Read the closed-user-groups sheet and push CUG headers to the Config Service.';
+  description.textContent = 'Update the CUG headers based on the closed-user-groups sheet.';
 
   const button = document.createElement('button');
   button.className = 'action-btn';
-  button.textContent = 'Regenerate CUG Headers';
+  button.textContent = 'Update CUG Headers';
 
   const status = document.createElement('div');
   status.className = 'status';
