@@ -7,6 +7,7 @@
  *   /auth/callback     — OAuth callback (exchanges code for tokens, creates session)
  *   /auth/logout       — Destroys session and logs out of Adobe IMS
  *   /auth/portal       — Redirects authenticated user based on group mapping
+ *   /auth/me           — Returns current user info as JSON (email, name, groups)
  *   /auth/cug-headers  — Pushes CUG sheet entries to Config Service as headers
  *   RUM / media        — Passed through to origin without auth
  *   Everything else    — Proxied to origin, then CUG headers are checked
@@ -145,6 +146,28 @@ const handleRequest = async (request, env) => {
       return redirectToLogin(request.url, env);
     }
     return handlePortalRedirect(session, request, env);
+  }
+
+  // User info: return authenticated user's identity as JSON
+  if (url.pathname === '/auth/me') {
+    const session = await getSession(request, env);
+    if (!session) {
+      return new Response(JSON.stringify({ authenticated: false }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({
+      authenticated: true,
+      email: session.email,
+      name: session.name,
+      groups: session.groups,
+    }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, no-store',
+      },
+    });
   }
 
   // CUG headers: fetch CUG sheet from origin and push headers to Config Service
