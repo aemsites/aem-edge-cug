@@ -65,10 +65,9 @@ async function proxyToOrigin(request, env, url) {
     req.headers.set('authorization', `token ${env.ORIGIN_AUTHENTICATION}`);
   }
 
-  // TODO: re-enable edge caching once a real domain with push invalidation is in place:
-  //   cf: { cacheEverything: true },
   let resp = await fetch(req, {
     method: req.method,
+    cf: { cacheEverything: true },
   });
   resp = new Response(resp.body, resp);
 

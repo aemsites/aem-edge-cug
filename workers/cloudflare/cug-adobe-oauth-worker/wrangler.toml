@@ -35,7 +35,7 @@ ORIGIN_HOSTNAME = "main--summit-portal--aemsites.aem.live"
 OAUTH_AUTHORIZE_URL = "https://ims-na1.adobelogin.com/ims/authorize/v2"
 OAUTH_TOKEN_URL = "https://ims-na1.adobelogin.com/ims/token/v3"
 OAUTH_LOGOUT_URL = "https://ims-na1.adobelogin.com/ims/logout/v1"
-OAUTH_REDIRECT_URI = "https://summit-portal.franklin-prod.workers.dev/auth/callback"
+OAUTH_REDIRECT_URI = "https://act.aem.now/auth/callback"
 OAUTH_SCOPE = "openid,AdobeID,email,profile"
 OAUTH_CLIENT_ID = "aem-sites-cug"
 
