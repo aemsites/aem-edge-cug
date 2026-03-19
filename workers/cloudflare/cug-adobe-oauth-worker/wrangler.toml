@@ -14,7 +14,6 @@ OAUTH_CLIENT_ID = "aem-sites-cug"
 # Secrets (set via: wrangler secret put <NAME>)
 # OAUTH_CLIENT_SECRET = "..."
 # JWT_SECRET = "..."
-# CONFIG_SERVICE_API_KEY = "..."  (site-level API key with "config" role for Config Service)
 
 [[kv_namespaces]]
 binding = "SESSIONS"
@@ -43,7 +42,6 @@ OAUTH_CLIENT_ID = "aem-sites-cug"
 # OAUTH_CLIENT_SECRET = "..."
 # JWT_SECRET = "..."
 # ORIGIN_AUTHENTICATION = "..."  (site token for the protected origin)
-# CONFIG_SERVICE_API_KEY = "..."  (site-level API key with "config" role for Config Service)
 
 [[env.summit.kv_namespaces]]
 binding = "SESSIONS"
