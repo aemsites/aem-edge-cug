@@ -109,15 +109,15 @@ async function postHeaders(org, site, headersConfig, token) {
 
 function renderUI(container, onRegenerate) {
   const heading = document.createElement('h2');
-  heading.textContent = 'CUG Headers';
+  heading.textContent = 'Page Access';
 
   const description = document.createElement('p');
   description.className = 'description';
-  description.textContent = 'Update the CUG headers based on the closed-user-groups sheet.';
+  description.textContent = 'Apply the access restrictions defined in the closed-user-groups sheet to your site.';
 
   const button = document.createElement('button');
   button.className = 'action-btn';
-  button.textContent = 'Update CUG Headers';
+  button.textContent = 'Apply Page Access';
 
   const status = document.createElement('div');
   status.className = 'status';
@@ -125,12 +125,12 @@ function renderUI(container, onRegenerate) {
   button.addEventListener('click', async () => {
     button.disabled = true;
     status.className = 'status loading';
-    status.textContent = 'Reading sheet and pushing headers…';
+    status.textContent = 'Applying Page Access...';
 
     try {
       const result = await onRegenerate();
       status.className = 'status success';
-      status.textContent = `Done — ${result.cugPaths} CUG path(s) configured (${result.totalPaths} total header paths).`;
+      status.textContent = `Done — access restrictions applied to ${result.cugPaths} restricted page(s) (${result.totalPaths} total).`;
     } catch (err) {
       status.className = 'status error';
       status.textContent = `Error: ${err.message}`;
