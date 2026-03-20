@@ -113,7 +113,7 @@ function renderUI(container, onRegenerate, onRemove) {
 
   const description = document.createElement('p');
   description.className = 'description';
-  description.textContent = 'Apply the access restrictions defined in the closed-user-groups sheet to your site.';
+  description.textContent = 'Manage the access restrictions defined in the closed-user-groups sheet for your site.';
 
   const buttonGroup = document.createElement('div');
   buttonGroup.className = 'button-group';
