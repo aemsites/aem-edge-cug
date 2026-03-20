@@ -107,7 +107,7 @@ async function postHeaders(org, site, headersConfig, token) {
   }
 }
 
-function renderUI(container, onRegenerate) {
+function renderUI(container, onRegenerate, onRemove) {
   const heading = document.createElement('h2');
   heading.textContent = 'Page Access';
 
@@ -115,15 +115,29 @@ function renderUI(container, onRegenerate) {
   description.className = 'description';
   description.textContent = 'Apply the access restrictions defined in the closed-user-groups sheet to your site.';
 
-  const button = document.createElement('button');
-  button.className = 'action-btn';
-  button.textContent = 'Apply Page Access';
+  const buttonGroup = document.createElement('div');
+  buttonGroup.className = 'button-group';
+
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'action-btn';
+  applyBtn.textContent = 'Apply Page Access';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'secondary-btn';
+  removeBtn.textContent = 'Remove Page Access';
+
+  buttonGroup.append(applyBtn, removeBtn);
 
   const status = document.createElement('div');
   status.className = 'status';
 
-  button.addEventListener('click', async () => {
-    button.disabled = true;
+  function setButtons(disabled) {
+    applyBtn.disabled = disabled;
+    removeBtn.disabled = disabled;
+  }
+
+  applyBtn.addEventListener('click', async () => {
+    setButtons(true);
     status.className = 'status loading';
     status.textContent = 'Applying Page Access...';
 
@@ -135,28 +149,52 @@ function renderUI(container, onRegenerate) {
       status.className = 'status error';
       status.textContent = `Error: ${err.message}`;
     } finally {
-      button.disabled = false;
+      setButtons(false);
     }
   });
 
-  container.append(heading, description, button, status);
+  removeBtn.addEventListener('click', async () => {
+    setButtons(true);
+    status.className = 'status loading';
+    status.textContent = 'Removing Page Access...';
+
+    try {
+      await onRemove();
+      status.className = 'status success';
+      status.textContent = 'Done — all CUG headers removed.';
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = `Error: ${err.message}`;
+    } finally {
+      setButtons(false);
+    }
+  });
+
+  container.append(heading, description, buttonGroup, status);
 }
 
 (async function init() {
   const { context, token } = await DA_SDK;
   const { org, site } = context;
 
-  renderUI(document.body, async () => {
-    const rows = await fetchCugSheet(org, site, token);
-    const cugHeaders = transformToHeadersConfig(rows);
-    const nonCugHeaders = await fetchExistingNonCugHeaders(org, site, token);
-    const merged = mergeHeaders(nonCugHeaders, cugHeaders);
+  renderUI(
+    document.body,
+    async () => {
+      const rows = await fetchCugSheet(org, site, token);
+      const cugHeaders = transformToHeadersConfig(rows);
+      const nonCugHeaders = await fetchExistingNonCugHeaders(org, site, token);
+      const merged = mergeHeaders(nonCugHeaders, cugHeaders);
 
-    await postHeaders(org, site, merged, token);
+      await postHeaders(org, site, merged, token);
 
-    return {
-      cugPaths: Object.keys(cugHeaders).length,
-      totalPaths: Object.keys(merged).length,
-    };
-  });
+      return {
+        cugPaths: Object.keys(cugHeaders).length,
+        totalPaths: Object.keys(merged).length,
+      };
+    },
+    async () => {
+      const nonCugHeaders = await fetchExistingNonCugHeaders(org, site, token);
+      await postHeaders(org, site, nonCugHeaders, token);
+    },
+  );
 }());
