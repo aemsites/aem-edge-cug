@@ -1,8 +1,8 @@
 {
   "mappings": [
-    "/content/aem-boilerplate/:/"
+    "/content/aem-edge-cug-akamai/:/"
   ],
   "includes": [
-    "/content/aem-boilerplate/"
+    "/content/aem-edge-cug-akamai/"
   ]
 }
