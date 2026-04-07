@@ -290,11 +290,11 @@ header .user-email {
   font-size: var(--body-font-size-xs);
   background: none;
   border: none;
+  border-radius: 0;
   cursor: pointer;
   padding: 0;
   margin: 0;
   color: var(--text-color);
-  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -326,6 +326,6 @@ header .user-menu a {
 
 @media (width >= 900px) {
   header .user-email {
-    max-width: 200px;
+    max-width: 250px;
   }
 }
