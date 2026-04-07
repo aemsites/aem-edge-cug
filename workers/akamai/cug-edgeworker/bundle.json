@@ -1,4 +1,4 @@
 {
-  "edgeworker-version": "2.1",
+  "edgeworker-version": "2.2",
   "description": "AEM Edge Delivery CUG proxy with OAuth + PKCE for aem-edge-cug-akamai"
 }

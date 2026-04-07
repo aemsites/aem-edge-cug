@@ -113,8 +113,7 @@ export async function handleCallback(url, secrets, requestHost) {
   });
 
   if (tokenResp.status !== 200) {
-    const errBody = await tokenResp.text();
-    return { error: true, status: 502, body: `Authentication failed (IMS ${tokenResp.status}): ${errBody}` };
+    return { error: true, status: 502, body: 'Authentication failed. Please try again.' };
   }
 
   const tokens = await tokenResp.json();
