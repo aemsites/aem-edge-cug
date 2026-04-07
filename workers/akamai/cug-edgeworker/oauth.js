@@ -72,8 +72,12 @@ export async function redirectToLogin(originalUrl, jwtSecret) {
  * Handle the /auth/callback redirect from IMS.
  * On error returns { error: true, status, headers?, body }.
  * On success returns { error: false, userInfo, originalUrl }.
+ *
+ * The token exchange uses httpRequest through the same Akamai property hostname,
+ * because EdgeWorker httpRequest cannot reach external hosts directly. A PM rule
+ * must forward requests matching OAUTH_TOKEN_PATH to ims-na1.adobelogin.com.
  */
-export async function handleCallback(url, secrets) {
+export async function handleCallback(url, secrets, requestHost) {
   const code = url.searchParams.get('code');
   const stateParam = url.searchParams.get('state');
   const error = url.searchParams.get('error');
@@ -101,7 +105,8 @@ export async function handleCallback(url, secrets) {
     redirect_uri: config.OAUTH_REDIRECT_URI,
   }).toString();
 
-  const tokenResp = await httpRequest(config.OAUTH_TOKEN_URL, {
+  const tokenUrl = `https://${requestHost}${config.OAUTH_TOKEN_PATH}`;
+  const tokenResp = await httpRequest(tokenUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: tokenBody,

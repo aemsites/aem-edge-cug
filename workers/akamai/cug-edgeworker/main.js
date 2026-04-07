@@ -99,7 +99,7 @@ export async function responseProvider(request) {
     // --- Auth routes ---
 
     if (url.pathname === '/auth/callback') {
-      const result = await handleCallback(url, secrets);
+      const result = await handleCallback(url, secrets, request.host);
       if (result.error) {
         return createResponse(result.status, result.headers || {}, result.body);
       }

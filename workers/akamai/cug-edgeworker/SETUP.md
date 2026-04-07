@@ -64,6 +64,16 @@ Follow the [official guide](https://www.aem.live/docs/byo-cdn-akamai-setup) to c
 
 > **Note:** Since `responseProvider` handles origin proxying, the Property Manager origin/header behaviors are bypassed for EdgeWorker requests. They remain configured as a fallback if `responseProvider` fails.
 
+### IMS Token Exchange Rule
+
+EdgeWorker `httpRequest` can only reach hostnames served by the same Akamai property — it cannot call external APIs directly. The OAuth token exchange must be proxied through PM. Sub-requests from `httpRequest` go through Property Manager but do not trigger EdgeWorker events, so there is no recursion.
+
+Add a child rule under the Default Rule (Blank Rule Template):
+
+1. **Criteria:** Path matches `/ims/token/v3`
+2. **Origin Server:** `ims-na1.adobelogin.com` (HTTPS, port 443, Forward Host Header = Origin Hostname)
+3. **Caching:** No Store
+
 ## Step 3: Create EdgeWorker ID
 
 1. In [Akamai Control Center](https://control.akamai.com), go to **CDN** > **EdgeWorkers**
