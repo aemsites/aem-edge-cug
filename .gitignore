@@ -7,3 +7,7 @@ helix-importer-ui
 .DS_Store
 *.bak
 .idea
+
+# EdgeWorker secrets and build artifacts
+workers/akamai/cug-edgeworker/secrets.js
+workers/akamai/cug-edgeworker/*.tgz
