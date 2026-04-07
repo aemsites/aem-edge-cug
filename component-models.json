@@ -214,5 +214,9 @@
         "valueType": "string"
       }
     ]
+  },
+  {
+    "id": "user-group-teaser",
+    "fields": []
   }
 ]
