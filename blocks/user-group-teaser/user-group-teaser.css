@@ -1,0 +1,8 @@
+.user-group-teaser {
+  min-height: 120px;
+}
+
+.user-group-teaser:empty {
+  display: none;
+  min-height: 0;
+}
