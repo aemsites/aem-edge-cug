@@ -17,7 +17,8 @@
         "^create-response$",
         "^encoding$",
         "^url-search-params$",
-        "^crypto$"
+        "^crypto$",
+        "secrets\\.js$"
       ]
     }],
     "no-restricted-syntax": "off",
