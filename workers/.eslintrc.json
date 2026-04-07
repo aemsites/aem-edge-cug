@@ -1,0 +1,32 @@
+{
+  "env": {
+    "browser": false,
+    "node": false
+  },
+  "globals": {
+    "crypto": "readonly",
+    "TextEncoder": "readonly",
+    "TextDecoder": "readonly",
+    "Uint8Array": "readonly",
+    "URLSearchParams": "readonly"
+  },
+  "rules": {
+    "import/no-unresolved": ["error", {
+      "ignore": [
+        "^http-request$",
+        "^create-response$",
+        "^encoding$",
+        "^url-search-params$",
+        "^crypto$"
+      ]
+    }],
+    "no-restricted-syntax": "off",
+    "object-curly-newline": "off",
+    "function-paren-newline": "off",
+    "function-call-argument-newline": "off",
+    "implicit-arrow-linebreak": "off",
+    "import/prefer-default-export": "off",
+    "no-use-before-define": ["error", { "functions": false }],
+    "prefer-template": "off"
+  }
+}
