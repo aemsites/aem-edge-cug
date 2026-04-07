@@ -319,7 +319,7 @@ header .user-info.is-open .user-menu {
   border-radius: 4px;
 }
 
-header .user-menu a {
+header nav .user-menu a {
   font-size: var(--body-font-size-xs);
   white-space: nowrap;
 }
