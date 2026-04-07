@@ -110,6 +110,12 @@ export async function responseProvider(request) {
       }, '');
     }
 
+    if (url.pathname === '/auth/login') {
+      const redirect = url.searchParams.get('redirect') || '/';
+      const loginResp = await redirectToLogin(redirect, secrets.JWT_SECRET);
+      return createResponse(loginResp.status, loginResp.headers, loginResp.body);
+    }
+
     if (url.pathname === '/auth/logout') {
       const logoutUrl = `${config.OAUTH_LOGOUT_URL}`
         + `?client_id=${config.OAUTH_CLIENT_ID}`

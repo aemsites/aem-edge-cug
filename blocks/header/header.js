@@ -103,6 +103,51 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   }
 }
 
+async function decorateUserInfo(nav) {
+  const navTools = nav.querySelector('.nav-tools');
+  if (!navTools) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'user-info';
+
+  let user;
+  try {
+    const resp = await fetch('/auth/me');
+    user = resp.ok ? await resp.json() : null;
+  } catch { user = null; }
+
+  if (!user?.authenticated) {
+    const signIn = document.createElement('a');
+    signIn.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    signIn.className = 'user-sign-in';
+    signIn.textContent = 'Sign in';
+    wrapper.append(signIn);
+  } else {
+    const btn = document.createElement('button');
+    btn.className = 'user-email';
+    btn.textContent = user.email;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      wrapper.classList.toggle('is-open');
+    });
+
+    const menu = document.createElement('div');
+    menu.className = 'user-menu';
+    const signOut = document.createElement('a');
+    signOut.href = '/auth/logout';
+    signOut.textContent = 'Sign out';
+    menu.append(signOut);
+
+    wrapper.append(btn, menu);
+
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) wrapper.classList.remove('is-open');
+    });
+  }
+
+  navTools.append(wrapper);
+}
+
 /**
  * loads and decorates the header, mainly the nav
  * @param {Element} block The header block element
@@ -163,4 +208,6 @@ export default async function decorate(block) {
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  decorateUserInfo(nav);
 }
