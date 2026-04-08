@@ -9,5 +9,5 @@ helix-importer-ui
 .idea
 
 # EdgeWorker secrets and build artifacts
-workers/akamai/cug-edgeworker/secrets.js
-workers/akamai/cug-edgeworker/*.tgz
+workers/akamai/cug-akamai-worker/secrets.js
+workers/akamai/cug-akamai-worker/*.tgz
