@@ -19,17 +19,24 @@ function getFragmentPath(userGroups) {
 
 export default async function decorate(el) {
   try {
+    el.textContent = '';
+    const heading = document.createElement('p');
+    heading.textContent = 'Block-level authorization sample.';
+    el.append(heading);
+
     const userGroups = await getUserGroups();
-    if (!userGroups?.length) { el.remove(); return; }
+    if (!userGroups?.length) {
+      const msg = document.createElement('p');
+      msg.textContent = 'This is the teaser for anonymous users';
+      el.append(msg);
+      return;
+    }
 
     const path = getFragmentPath(userGroups);
-    if (!path) { el.remove(); return; }
+    if (!path) return;
 
     const fragment = await loadFragment(path);
-    if (!fragment) { el.remove(); return; }
-
-    el.textContent = '';
-    el.append(fragment);
+    if (fragment) el.append(fragment);
   } catch {
     el.remove();
   }
