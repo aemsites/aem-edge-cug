@@ -108,7 +108,7 @@ export async function handleCallback(request, env) {
   // Prefer id_token (contains email claim); fall back to access_token
   const tokens = await tokenResponse.json();
   const claims = parseJwt(tokens.id_token || tokens.access_token);
-  const email = claims.email || claims.sub;
+  const email = (claims.email || claims.sub).toLowerCase();
   if (!email) {
     return new Response('Could not determine user email from token', { status: 502 });
   }

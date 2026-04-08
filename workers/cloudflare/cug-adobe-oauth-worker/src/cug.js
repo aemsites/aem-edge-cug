@@ -27,7 +27,7 @@ export async function checkCugAccess(originResponse, session, request, env) {
 
   // If specific domains are required, check the user's email domain
   if (cugGroups) {
-    const allowedGroups = cugGroups.split(',').map((g) => g.trim());
+    const allowedGroups = cugGroups.split(',').map((g) => g.trim().toLowerCase());
     const userGroups = session.groups || [];
     const hasAccess = allowedGroups.some((g) => userGroups.includes(g));
 
