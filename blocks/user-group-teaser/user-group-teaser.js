@@ -27,7 +27,7 @@ export default async function decorate(el) {
     const userGroups = await getUserGroups();
     if (!userGroups?.length) {
       const msg = document.createElement('p');
-      msg.textContent = 'This is the teaser for anonymous users';
+      msg.textContent = 'This is the teaser for anonymous users.';
       el.append(msg);
       return;
     }
