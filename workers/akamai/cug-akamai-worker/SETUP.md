@@ -22,7 +22,7 @@ The EdgeWorker uses `responseProvider` to handle origin proxying and CUG enforce
 ## File Structure
 
 ```
-workers/akamai/cug-edgeworker/
+workers/akamai/cug-akamai-worker/
   bundle.json           EdgeWorker metadata
   main.js               Entry point: onClientRequest + responseProvider
   config.js             OAuth/origin configuration
@@ -88,7 +88,7 @@ Add a child rule under the Default Rule (Blank Rule Template):
 Copy the template and fill in your actual values:
 
 ```bash
-cd workers/akamai/cug-edgeworker
+cd workers/akamai/cug-akamai-worker
 cp secrets.example.js secrets.js
 ```
 
@@ -126,7 +126,7 @@ const config = {
 ## Step 6: Build and Deploy
 
 ```bash
-cd workers/akamai/cug-edgeworker
+cd workers/akamai/cug-akamai-worker
 
 # Build the bundle (include all JS files)
 tar -czvf bundle.tgz \
