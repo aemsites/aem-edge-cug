@@ -141,6 +141,8 @@ Register an OAuth client via the [Adobe IMS Self-Service portal](https://imss.co
 
 ## Step 2: Cloudflare Setup
 
+Follow the [Cloudflare Setup guide on aem.live](https://www.aem.live/docs/byo-cdn-cloudflare-worker-setup) for the base Cloudflare configuration (account, DNS, SSL/TLS, caching, and worker creation). The steps below cover only the additional configuration required for CUG.
+
 Cloudflare dashboard: https://dash.cloudflare.com/
 
 ### Create a KV Namespace
