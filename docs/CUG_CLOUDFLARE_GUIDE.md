@@ -2,8 +2,6 @@
 
 This setup enables Closed User Group (CUG) protection for AEM Edge Delivery sites served through Cloudflare. It deploys a Cloudflare Worker that sits between the browser and the AEM origin, authenticating users via Adobe IMS (OAuth 2.0 + PKCE) and enforcing per-path access control based on CUG headers published from AEM Author or Document Authoring (DA). Protected pages are never delivered to unauthenticated or unauthorized users — the worker intercepts the origin response at the edge and gates access before any content reaches the browser.
 
-PKCE (Proof Key for Code Exchange) ensures that even if the authorization code is intercepted during the redirect, it cannot be exchanged for tokens without the original code verifier — which only the worker knows.
-
 ## Architecture
 
 ```
@@ -93,58 +91,6 @@ Browser                 Cloudflare Worker                    IMS                
   │   Cache-Control: private │                                │                      │
 ```
 
-### User Journeys
-
-#### Public page
-
-1. Browser requests `/about`.
-2. Worker proxies to origin.
-3. Origin responds with HTML — no `x-aem-cug-required` header.
-4. Worker strips any CUG headers (defensive) and serves the page as-is.
-5. Header calls `/auth/me` → 401 → shows "Sign in" link.
-
-#### Protected page, unauthenticated visitor
-
-1. Browser requests `/members/adobe`.
-2. Worker proxies to origin.
-3. Origin responds with `x-aem-cug-required: true` and `x-aem-cug-groups: adobe.com`.
-4. No valid session → worker calls `redirectToLogin()`:
-   - Generates PKCE verifier + challenge.
-   - Stores verifier + original URL (`/members/adobe`) in KV.
-   - Redirects browser to IMS authorize endpoint with PKCE params.
-5. User authenticates with Adobe IMS.
-6. IMS redirects to `/auth/callback?code=...&state=...`.
-7. Worker retrieves stored verifier from KV, exchanges code for tokens.
-8. Worker extracts email from ID token, derives group from domain.
-9. Worker creates a signed JWT session, sets `auth_token` cookie.
-10. Worker redirects browser back to `/members/adobe`.
-11. Browser requests `/members/adobe` (now with cookie).
-12. Worker verifies session, proxies to origin, checks CUG groups — `adobe.com` matches.
-13. Worker strips CUG headers, sets `Cache-Control: private, no-store`, serves the page.
-
-#### Portal redirect
-
-1. User clicks "Sign in" → browser requests `/auth/portal`.
-2. Worker checks for session — none found → redirects to IMS login (same as steps 4–9 above, but original URL is `/auth/portal`).
-3. After login, browser returns to `/auth/portal` with session cookie.
-4. Worker verifies session, fetches `closed-user-groups-mapping.json` from origin.
-5. User's group `adobe.com` matches the mapping entry for `/members/adobe`.
-6. Worker redirects to `/members/adobe`.
-
-#### Block-level personalization on a shared page
-
-1. Authenticated `adobe.com` user visits the home page (`/`).
-2. Worker proxies to origin — no CUG headers on `/`, page is served publicly.
-3. Page loads and the `user-group-teaser` block initializes.
-4. Block calls `GET /auth/me` → worker returns `{ groups: ["adobe.com"] }`.
-5. Block resolves fragment path for the user's group (e.g. `/members/adobe/teaser`).
-6. `loadFragment` fetches `/members/adobe/teaser` — this request goes through the worker.
-7. Worker proxies to origin, origin responds with `x-aem-cug-required: true` and `x-aem-cug-groups: adobe.com`.
-8. Worker verifies session, checks group — `adobe.com` matches — serves the fragment HTML.
-9. Block renders the teaser. If the user is not signed in, the block removes itself.
-
----
-
 ## CDN Routes
 
 ```
@@ -194,6 +140,8 @@ Register an OAuth client via the [Adobe IMS Self-Service portal](https://imss.co
 3. **Save the Client Secret** — you'll need it for Step 4
 
 ## Step 2: Cloudflare Setup
+
+Cloudflare dashboard: https://dash.cloudflare.com/
 
 ### Create a KV Namespace
 
