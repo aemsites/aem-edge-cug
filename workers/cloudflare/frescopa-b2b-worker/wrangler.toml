@@ -1,0 +1,10 @@
+name = "frescopa-b2b"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+
+[vars]
+ORIGIN_HOSTNAME = "main--frescopa-business-da--aem-showcase.aem.live"
+
+# Secrets (set via: wrangler secret put <NAME>)
+# JWT_SECRET = "..."
+# ORIGIN_AUTHENTICATION = "..."
