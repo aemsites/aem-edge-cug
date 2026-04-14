@@ -19,6 +19,18 @@ import { checkCugAccess } from './cug.js';
 
 const PORTAL_URL = '/';
 
+const GROUP_PORTALS = {
+  'wknd.com': '/dashboard/wknd',
+  'securbank.com': '/dashboard/securbank',
+};
+
+function portalForGroups(groups) {
+  for (const g of groups || []) {
+    if (GROUP_PORTALS[g]) return GROUP_PORTALS[g];
+  }
+  return PORTAL_URL;
+}
+
 const getExtension = (path) => {
   const basename = path.split('/').pop();
   const pos = basename.lastIndexOf('.');
@@ -111,10 +123,13 @@ const handleRequest = async (request, env) => {
       if (result instanceof Response) return result;
 
       const token = await createSession(env, result.userInfo);
+      const destination = result.redirectUrl === '/'
+        ? portalForGroups(result.userInfo.groups)
+        : result.redirectUrl;
       return new Response(null, {
         status: 302,
         headers: {
-          Location: new URL(result.redirectUrl, request.url).href,
+          Location: new URL(destination, request.url).href,
           'Set-Cookie': sessionCookie(token),
         },
       });
@@ -137,7 +152,7 @@ const handleRequest = async (request, env) => {
     if (!session) {
       return redirectToLogin(request.url);
     }
-    return Response.redirect(new URL(PORTAL_URL, request.url).href, 302);
+    return Response.redirect(new URL(portalForGroups(session.groups), request.url).href, 302);
   }
 
   if (url.pathname === '/auth/me') {

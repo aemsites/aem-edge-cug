@@ -79,6 +79,18 @@ describe('index (request routing)', () => {
       expect(resp.headers.get('Set-Cookie')).toContain('auth_token=');
     });
 
+    it('redirects to group portal when redirect is /', async () => {
+      const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/', {
+        method: 'POST',
+        body: new URLSearchParams({ email: 'megan@wknd.com', password: 'megan' }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      const resp = await worker.fetch(request, env);
+
+      expect(resp.status).toBe(302);
+      expect(resp.headers.get('Location')).toBe('https://frescopa-b2b.workers.dev/dashboard/wknd');
+    });
+
     it('shows login form with error on invalid credentials', async () => {
       const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/dashboard/securbank', {
         method: 'POST',
@@ -113,7 +125,7 @@ describe('index (request routing)', () => {
       expect(resp.headers.get('Location')).toContain('/auth/login');
     });
 
-    it('redirects to / when session exists', async () => {
+    it('redirects securbank user to /dashboard/securbank', async () => {
       const { createSession } = await import('../src/session.js');
       const token = await createSession(env, {
         email: 'fred@securbank.com', name: 'Fred', groups: ['securbank.com'],
@@ -125,7 +137,22 @@ describe('index (request routing)', () => {
       const resp = await worker.fetch(request, env);
 
       expect(resp.status).toBe(302);
-      expect(resp.headers.get('Location')).toBe('https://frescopa-b2b.workers.dev/');
+      expect(resp.headers.get('Location')).toBe('https://frescopa-b2b.workers.dev/dashboard/securbank');
+    });
+
+    it('redirects wknd user to /dashboard/wknd', async () => {
+      const { createSession } = await import('../src/session.js');
+      const token = await createSession(env, {
+        email: 'megan@wknd.com', name: 'Megan', groups: ['wknd.com'],
+      });
+
+      const request = new Request('https://frescopa-b2b.workers.dev/auth/portal', {
+        headers: { Cookie: `auth_token=${token}` },
+      });
+      const resp = await worker.fetch(request, env);
+
+      expect(resp.status).toBe(302);
+      expect(resp.headers.get('Location')).toBe('https://frescopa-b2b.workers.dev/dashboard/wknd');
     });
   });
 
