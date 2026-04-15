@@ -4,16 +4,17 @@
  * Cloudflare Worker entry point for Frescopa B2B with CUG authentication.
  *
  * Routes:
- *   GET  /auth/login   — Serve HTML login form
  *   POST /auth/login   — Validate credentials, create session, redirect
  *   /auth/logout       — Destroy session and redirect to home
- *   /auth/portal       — Redirect to business.frescopa.coffee
+ *   /auth/portal       — Redirect to group-specific dashboard
  *   /auth/me           — Return current user info as JSON
  *   RUM / media        — Passed through to origin without auth
  *   Everything else    — Proxied to origin, then CUG headers are checked
+ *
+ * The login page at /login is served from the origin (author-editable EDS page).
  */
 
-import { redirectToLogin, serveLoginForm, handleLoginPost } from './auth.js';
+import { redirectToLogin, handleLoginPost } from './auth.js';
 import { createSession, getSession, sessionCookie, clearSessionCookie } from './session.js';
 import { checkCugAccess } from './cug.js';
 
@@ -117,24 +118,21 @@ const handleRequest = async (request, env) => {
 
   // --- Auth routes ---
 
-  if (url.pathname === '/auth/login') {
-    if (request.method === 'POST') {
-      const result = await handleLoginPost(request);
-      if (result instanceof Response) return result;
+  if (url.pathname === '/auth/login' && request.method === 'POST') {
+    const result = await handleLoginPost(request);
+    if (result instanceof Response) return result;
 
-      const token = await createSession(env, result.userInfo);
-      const destination = result.redirectUrl === '/'
-        ? portalForGroups(result.userInfo.groups)
-        : result.redirectUrl;
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: new URL(destination, request.url).href,
-          'Set-Cookie': sessionCookie(token),
-        },
-      });
-    }
-    return serveLoginForm(request);
+    const token = await createSession(env, result.userInfo);
+    const destination = result.redirectUrl === '/'
+      ? portalForGroups(result.userInfo.groups)
+      : result.redirectUrl;
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: new URL(destination, request.url).href,
+        'Set-Cookie': sessionCookie(token),
+      },
+    });
   }
 
   if (url.pathname === '/auth/logout') {

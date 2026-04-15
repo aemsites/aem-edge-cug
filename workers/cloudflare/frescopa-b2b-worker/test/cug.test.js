@@ -43,7 +43,7 @@ describe('cug', () => {
   });
 
   describe('CUG required, no session', () => {
-    it('redirects to /auth/login', async () => {
+    it('redirects to /login', async () => {
       const resp = await checkCugAccess(
         originResponse({ 'x-aem-cug-required': 'true' }),
         null, request,
@@ -51,7 +51,7 @@ describe('cug', () => {
 
       expect(resp.status).toBe(302);
       const location = resp.headers.get('Location');
-      expect(location).toContain('/auth/login');
+      expect(location).toContain('/login');
       expect(location).toContain('redirect=');
     });
   });

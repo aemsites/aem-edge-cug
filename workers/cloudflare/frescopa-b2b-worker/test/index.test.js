@@ -52,19 +52,6 @@ describe('index (request routing)', () => {
     });
   });
 
-  describe('GET /auth/login', () => {
-    it('returns the HTML login form', async () => {
-      const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/dashboard/securbank');
-      const resp = await worker.fetch(request, env);
-
-      expect(resp.status).toBe(200);
-      expect(resp.headers.get('Content-Type')).toContain('text/html');
-      const body = await resp.text();
-      expect(body).toContain('Frescopa B2B');
-      expect(body).toContain('Sign in');
-    });
-  });
-
   describe('POST /auth/login', () => {
     it('creates a session and redirects on valid credentials', async () => {
       const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/dashboard/securbank', {
@@ -91,7 +78,7 @@ describe('index (request routing)', () => {
       expect(resp.headers.get('Location')).toBe('https://frescopa-b2b.workers.dev/dashboard/wknd');
     });
 
-    it('shows login form with error on invalid credentials', async () => {
+    it('redirects to /login with error on invalid credentials', async () => {
       const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/dashboard/securbank', {
         method: 'POST',
         body: new URLSearchParams({ email: 'fred@securbank.com', password: 'wrong' }),
@@ -99,9 +86,11 @@ describe('index (request routing)', () => {
       });
       const resp = await worker.fetch(request, env);
 
-      expect(resp.status).toBe(401);
-      const body = await resp.text();
-      expect(body).toContain('Invalid email or password.');
+      expect(resp.status).toBe(302);
+      const location = new URL(resp.headers.get('Location'));
+      expect(location.pathname).toBe('/login');
+      expect(location.searchParams.get('error')).toBe('invalid');
+      expect(location.searchParams.get('redirect')).toBe('/dashboard/securbank');
     });
   });
 
@@ -122,7 +111,7 @@ describe('index (request routing)', () => {
       const resp = await worker.fetch(request, env);
 
       expect(resp.status).toBe(302);
-      expect(resp.headers.get('Location')).toContain('/auth/login');
+      expect(resp.headers.get('Location')).toContain('/login');
     });
 
     it('redirects securbank user to /dashboard/securbank', async () => {
@@ -208,7 +197,7 @@ describe('index (request routing)', () => {
       const resp = await worker.fetch(request, env);
 
       expect(resp.status).toBe(302);
-      expect(resp.headers.get('Location')).toContain('/auth/login');
+      expect(resp.headers.get('Location')).toContain('/login');
     });
 
     it('serves content when session exists and CUG is satisfied', async () => {
