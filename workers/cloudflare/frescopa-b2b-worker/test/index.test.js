@@ -2,10 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import worker from '../src/index.js';
 import { createMockEnv } from './helpers.js';
 
+function originResponse(body = '<html>ok</html>', headers = {}, status = 200) {
+  return new Response(body, { status, headers: { 'Content-Type': 'text/html', ...headers } });
+}
+
+function mappingResponse(data) {
+  return new Response(JSON.stringify({ data }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 function mockOriginFetch(body = '<html>ok</html>', headers = {}, status = 200) {
-  return vi.fn().mockResolvedValue(
-    new Response(body, { status, headers: { 'Content-Type': 'text/html', ...headers } }),
-  );
+  return vi.fn().mockResolvedValue(originResponse(body, headers, status));
 }
 
 describe('index (request routing)', () => {
@@ -67,6 +76,13 @@ describe('index (request routing)', () => {
     });
 
     it('redirects to group portal when redirect is /', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+        mappingResponse([
+          { group: 'wknd.com', url: '/dashboard/wknd' },
+          { group: 'securbank.com', url: '/dashboard/securbank' },
+        ]),
+      ));
+
       const request = new Request('https://frescopa-b2b.workers.dev/auth/login?redirect=/', {
         method: 'POST',
         body: new URLSearchParams({ email: 'megan@wknd.com', password: 'megan' }),
@@ -115,6 +131,13 @@ describe('index (request routing)', () => {
     });
 
     it('redirects securbank user to /dashboard/securbank', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+        mappingResponse([
+          { group: 'wknd.com', url: '/dashboard/wknd' },
+          { group: 'securbank.com', url: '/dashboard/securbank' },
+        ]),
+      ));
+
       const { createSession } = await import('../src/session.js');
       const token = await createSession(env, {
         email: 'fred@securbank.com', name: 'Fred', groups: ['securbank.com'],
@@ -130,6 +153,13 @@ describe('index (request routing)', () => {
     });
 
     it('redirects wknd user to /dashboard/wknd', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+        mappingResponse([
+          { group: 'wknd.com', url: '/dashboard/wknd' },
+          { group: 'securbank.com', url: '/dashboard/securbank' },
+        ]),
+      ));
+
       const { createSession } = await import('../src/session.js');
       const token = await createSession(env, {
         email: 'megan@wknd.com', name: 'Megan', groups: ['wknd.com'],

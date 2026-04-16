@@ -17,20 +17,7 @@
 import { redirectToLogin, handleLoginPost } from './auth.js';
 import { createSession, getSession, sessionCookie, clearSessionCookie } from './session.js';
 import { checkCugAccess } from './cug.js';
-
-const PORTAL_URL = '/';
-
-const GROUP_PORTALS = {
-  'wknd.com': '/dashboard/wknd',
-  'securbank.com': '/dashboard/securbank',
-};
-
-function portalForGroups(groups) {
-  for (const g of groups || []) {
-    if (GROUP_PORTALS[g]) return GROUP_PORTALS[g];
-  }
-  return PORTAL_URL;
-}
+import { getPortalPath, handlePortalRedirect } from './portal.js';
 
 const getExtension = (path) => {
   const basename = path.split('/').pop();
@@ -124,7 +111,7 @@ const handleRequest = async (request, env) => {
 
     const token = await createSession(env, result.userInfo);
     const destination = result.redirectUrl === '/'
-      ? portalForGroups(result.userInfo.groups)
+      ? await getPortalPath(result.userInfo.groups, request, env)
       : result.redirectUrl;
     return new Response(null, {
       status: 302,
@@ -150,7 +137,7 @@ const handleRequest = async (request, env) => {
     if (!session) {
       return redirectToLogin(request.url);
     }
-    return Response.redirect(new URL(portalForGroups(session.groups), request.url).href, 302);
+    return handlePortalRedirect(session, request, env);
   }
 
   if (url.pathname === '/auth/me') {
