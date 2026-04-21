@@ -321,3 +321,7 @@ CUG headers are set on the AEM Edge Delivery origin via the Config Service. The 
 
 Both headers are stripped before the response reaches the browser. Protected pages are served with `Cache-Control: private, no-store`.
 
+## See Also
+
+- [Cloudflare CUG Worker Setup](CUG_CLOUDFLARE_GUIDE.md) — alternative CDN implementation using Cloudflare Workers and KV
+

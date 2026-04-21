@@ -1,0 +1,60 @@
+# AEM Edge CUG
+
+> Closed User Groups for AEM Edge Delivery Services — spreadsheet-driven, edge-enforced access control via Adobe IMS OAuth 2.0 + PKCE.
+
+This repository contains an Edge Delivery site and CDN edge workers (Akamai and Cloudflare) that restrict pages to authenticated users or specific groups. Authors define access rules in a spreadsheet; AEM translates them to CUG headers; CDN workers enforce them before content reaches the browser.
+
+## Guides
+
+- [docs/CUG.md](docs/CUG.md): Overview of the CUG pattern and links to all guides
+- [docs/CUG_AUTHOR_GUIDE.md](docs/CUG_AUTHOR_GUIDE.md): Spreadsheet setup, access rules, wildcards, publishing, troubleshooting
+- [docs/CUG_DEVELOPER_GUIDE.md](docs/CUG_DEVELOPER_GUIDE.md): Sign-in/sign-out flow, /auth/* endpoints, user-group-teaser block
+- [docs/CUG_AKAMAI_GUIDE.md](docs/CUG_AKAMAI_GUIDE.md): Akamai EdgeWorker deployment, Property Manager config, IMS proxy rule, secrets
+- [docs/CUG_CLOUDFLARE_GUIDE.md](docs/CUG_CLOUDFLARE_GUIDE.md): Cloudflare Worker deployment, KV setup, wrangler config, secrets, testing
+
+## Agent Instructions
+
+- [AGENTS.md](AGENTS.md): Project structure, dev commands, testing, conventions, architecture, and constraints for AI coding agents
+
+## Configuration
+
+- [fstab.yaml](fstab.yaml): AEM content mount configuration
+- [helix-query.yaml](helix-query.yaml): AEM query index configuration
+- [helix-sitemap.yaml](helix-sitemap.yaml): Sitemap generation config
+- [paths.json](paths.json): Content path mapping
+- [workers/cloudflare/cug-cloudflare-worker/wrangler.toml](workers/cloudflare/cug-cloudflare-worker/wrangler.toml): Cloudflare Worker config with IMS OAuth vars and KV bindings
+- [workers/cloudflare/frescopa-b2b-worker/wrangler.toml](workers/cloudflare/frescopa-b2b-worker/wrangler.toml): Frescopa B2B Worker config
+- [workers/akamai/cug-akamai-worker/config.js](workers/akamai/cug-akamai-worker/config.js): Akamai EdgeWorker OAuth/origin config
+
+## Source Code — Cloudflare Workers
+
+- [workers/cloudflare/cug-cloudflare-worker/src/index.js](workers/cloudflare/cug-cloudflare-worker/src/index.js): Generic CUG worker entry — request routing, origin proxy, auth handlers
+- [workers/cloudflare/cug-cloudflare-worker/src/oauth.js](workers/cloudflare/cug-cloudflare-worker/src/oauth.js): PKCE generation, IMS redirect, OAuth callback
+- [workers/cloudflare/cug-cloudflare-worker/src/session.js](workers/cloudflare/cug-cloudflare-worker/src/session.js): JWT sign/verify, cookie helpers
+- [workers/cloudflare/cug-cloudflare-worker/src/cug.js](workers/cloudflare/cug-cloudflare-worker/src/cug.js): CUG header enforcement logic
+- [workers/cloudflare/cug-cloudflare-worker/src/portal.js](workers/cloudflare/cug-cloudflare-worker/src/portal.js): Portal mapping redirect
+- [workers/cloudflare/frescopa-b2b-worker/src/index.js](workers/cloudflare/frescopa-b2b-worker/src/index.js): Frescopa B2B entry — POST login, origin proxy, CUG enforcement
+- [workers/cloudflare/frescopa-b2b-worker/src/auth.js](workers/cloudflare/frescopa-b2b-worker/src/auth.js): Credential validation, login handler
+- [workers/cloudflare/frescopa-b2b-worker/src/users.js](workers/cloudflare/frescopa-b2b-worker/src/users.js): User store
+
+## Source Code — Akamai EdgeWorker
+
+- [workers/akamai/cug-akamai-worker/main.js](workers/akamai/cug-akamai-worker/main.js): Entry — onClientRequest + responseProvider
+- [workers/akamai/cug-akamai-worker/oauth.js](workers/akamai/cug-akamai-worker/oauth.js): PKCE, IMS redirect, callback
+- [workers/akamai/cug-akamai-worker/session.js](workers/akamai/cug-akamai-worker/session.js): JWT sign/verify, cookies
+- [workers/akamai/cug-akamai-worker/cug.js](workers/akamai/cug-akamai-worker/cug.js): CUG header enforcement
+- [workers/akamai/cug-akamai-worker/utils.js](workers/akamai/cug-akamai-worker/utils.js): URL parsing, media/RUM detection
+
+## Source Code — Edge Delivery Blocks
+
+- [blocks/header/header.js](blocks/header/header.js): Auth-aware header — calls /auth/me, renders sign-in/out
+- [blocks/user-group-teaser/user-group-teaser.js](blocks/user-group-teaser/user-group-teaser.js): Group-based teaser — loads fragments per user group
+- [blocks/cards/cards.js](blocks/cards/cards.js): Standard cards block
+- [blocks/columns/columns.js](blocks/columns/columns.js): Standard columns block
+- [blocks/fragment/fragment.js](blocks/fragment/fragment.js): Fragment loader block
+- [blocks/footer/footer.js](blocks/footer/footer.js): Footer block
+
+## Tests
+
+- [workers/cloudflare/cug-cloudflare-worker/test/](workers/cloudflare/cug-cloudflare-worker/test/): Vitest tests for generic CUG worker (index, oauth, session, cug, portal)
+- [workers/cloudflare/frescopa-b2b-worker/test/](workers/cloudflare/frescopa-b2b-worker/test/): Vitest tests for Frescopa B2B worker (index, auth, session, cug, portal)

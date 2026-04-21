@@ -1,13 +1,14 @@
 # CUG Developer Guide
 
-This project is an example implementation of Closed User Group (CUG) authentication and block-level authorization for an Edge Delivery site. It is not an official reference implementation — it is a custom project meant to illustrate one way to integrate CUG into your own site. Adapt the patterns here to fit your requirements.
+This guide covers the client-side integration points for CUG: the sign-in/sign-out flow, the `/auth/*` endpoint contract, and the `user-group-teaser` block for group-based content personalization.
 
-CUG relies on a CDN edge worker that sits between the browser and the AEM origin. The worker handles OAuth sign-in/sign-out via Adobe IMS, manages sessions with a signed JWT cookie, and enforces CUG access rules using headers set by the AEM Config Service. On the client side, header and block code calls the worker's `/auth/*` endpoints to determine the user's identity and group membership.
+CUG relies on a CDN edge worker that sits between the browser and the AEM origin. The worker handles OAuth sign-in/sign-out via Adobe IMS, manages sessions with a signed JWT cookie, and enforces CUG access rules using headers set by the AEM Config Service. On the client side, header and block code calls the worker's `/auth/*` endpoints to determine the user's identity and group membership. This is an example implementation — adapt the patterns to fit your requirements.
 
 **Related guides:**
 
 - [CUG Author Guide](CUG_AUTHOR_GUIDE.md) — spreadsheet setup, access rules, publishing
 - [Akamai CUG Worker Setup](CUG_AKAMAI_GUIDE.md) — CDN worker deployment, configuration, and secrets
+- [Cloudflare CUG Worker Setup](CUG_CLOUDFLARE_GUIDE.md) — CDN worker deployment, KV setup, and secrets
 
 ---
 
@@ -22,7 +23,7 @@ The header block renders a "Sign in" link when the user has no active session. C
 
 Implementation: [`blocks/header/header.js`](../blocks/header/header.js) — the `decorateUserInfo` function.
 
-> **Note:** OAuth configuration, token exchange details, and session cookie internals are covered in the [Akamai CUG Worker Setup](CUG_AKAMAI_GUIDE.md) guide.
+> **Note:** OAuth configuration, token exchange details, and session cookie internals are covered in the CDN-specific guides: [Akamai](CUG_AKAMAI_GUIDE.md) | [Cloudflare](CUG_CLOUDFLARE_GUIDE.md).
 
 ---
 

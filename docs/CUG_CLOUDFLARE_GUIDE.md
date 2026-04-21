@@ -341,3 +341,7 @@ Depending on your identity provider, you can adapt the group derivation logic in
 | Multi-domain mapping | Map several email domains to one group | `adobe.com` + `behance.com` → `adobe` |
 
 The only requirement is that the groups stored in the session JWT match the values in the `x-aem-cug-groups` header set by the Config Service.
+
+## See Also
+
+- [Akamai CUG Worker Setup](CUG_AKAMAI_GUIDE.md) — alternative CDN implementation using Akamai EdgeWorkers

@@ -1,8 +1,8 @@
 # CUG Author Guide
 
-Closed User Groups (CUG) let you restrict pages on your Edge Delivery site to authenticated users or specific groups — controlled entirely from a spreadsheet. You define which paths to protect and which groups are allowed using a `closed-user-groups` sheet at your site root. When you publish the sheet, each row is translated into CUG headers (`x-aem-cug-required` and `x-aem-cug-groups`) and pushed to the AEM Config Service. Your CDN edge worker then reads these headers on every request and enforces them — redirecting unauthenticated visitors to a login page or returning a 403 for unauthorized users. Wildcard patterns (`*` and `**`) let you protect entire subtrees with a single rule, and unpublishing the sheet removes all protection at once.
+By the end of this guide you will be able to create a `closed-user-groups` spreadsheet, define path-based access rules with wildcards, publish those rules so the CDN enforces them, and troubleshoot common issues.
 
-This guide walks you through creating the spreadsheet, defining access rules with path patterns and group restrictions, publishing and unpublishing, and troubleshooting common issues.
+Closed User Groups (CUG) let you restrict pages on your Edge Delivery site to authenticated users or specific groups — controlled entirely from a spreadsheet. You define which paths to protect and which groups are allowed using a `closed-user-groups` sheet at your site root. When you publish the sheet, each row is translated into CUG headers (`x-aem-cug-required` and `x-aem-cug-groups`) and pushed to the AEM Config Service. Your CDN edge worker then reads these headers on every request and enforces them — redirecting unauthenticated visitors to a login page or returning a 403 for unauthorized users. Wildcard patterns (`*` and `**`) let you protect entire subtrees with a single rule, and unpublishing the sheet removes all protection at once.
 
 ---
 
