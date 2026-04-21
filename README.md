@@ -1,6 +1,6 @@
 # Closed User Groups (CUG) for AEM Edge Delivery Services
 
-This project is an example implementation of Closed User Groups for AEM Edge Delivery Services. It demonstrates how to restrict pages to authenticated users or specific groups using a spreadsheet-driven, edge-enforced access control pattern. Authors define access rules in a spreadsheet, AEM translates them into CUG headers via the Config Service, and a CDN edge worker authenticates visitors via Adobe IMS (OAuth 2.0 + PKCE) and enforces group membership — all before content reaches the browser. It is not an official reference implementation — adapt the patterns here to fit your own site and requirements.
+This project is an example implementation of Closed User Groups for AEM Edge Delivery Services. It demonstrates how to restrict pages to authenticated users or specific groups using a spreadsheet-driven, edge-enforced access control pattern. Authors define access rules in a spreadsheet, AEM translates them into CUG headers via the Config Service, and a CDN edge worker (Akamai or Cloudflare) authenticates visitors via Adobe IMS (OAuth 2.0 + PKCE) and enforces group membership — all before content reaches the browser. It is not an official reference implementation — adapt the patterns here to fit your own site and requirements.
 
 ## How It Works
 
