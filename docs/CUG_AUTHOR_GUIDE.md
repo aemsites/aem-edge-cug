@@ -16,13 +16,16 @@ Example location: `/content/mysite/closed-user-groups`
 
 ### 2. Add columns and rows
 
-The spreadsheet has three columns:
+The spreadsheet has four columns:
 
 | Column | Required | Description |
 |--------|----------|-------------|
 | `url` | Yes | Path pattern to protect (must start with `/`) |
 | `cug-required` | No | Whether login is required: `true` or `false` |
 | `cug-groups` | No | Comma-separated list of allowed groups |
+| `cug-login-path` | No | Login page path (e.g. `/login`) or absolute URL (e.g. `https://idp.example.com/login`) to redirect unauthenticated visitors to |
+
+> **Worker support:** `cug-login-path` is set by AEM as the `x-aem-cug-login-path` header, but the reference Cloudflare and Akamai workers in this repo do not yet read it — they always redirect to the fixed Adobe IMS OAuth login flow. If you need per-path login redirects, add header handling to your worker's login-redirect logic (see [CUG Developer Guide](CUG_DEVELOPER_GUIDE.md)).
 
 ### 3. Publish the spreadsheet
 
@@ -79,6 +82,22 @@ Resulting headers set by the Config Service for paths matching `/partners/**`:
 |--------|-------|
 | `x-aem-cug-required` | `true` |
 | `x-aem-cug-groups` | `gold,silver` |
+
+### Protect a section with a custom login page
+
+| url | cug-required | cug-groups | cug-login-path |
+|-----|--------------|------------|-----------------|
+| `/partners/**` | true | gold,silver | `https://idp.partners.example.com/login` |
+
+Resulting headers set by the Config Service for paths matching `/partners/**`:
+
+| Header | Value |
+|--------|-------|
+| `x-aem-cug-required` | `true` |
+| `x-aem-cug-groups` | `gold,silver` |
+| `x-aem-cug-login-path` | `https://idp.partners.example.com/login` |
+
+See the worker support note above — the reference workers in this repo do not yet redirect to this header's value.
 
 ### Mixed access levels
 
@@ -145,7 +164,8 @@ CUG headers are set by AEM in the Config Service, but **enforcement happens at t
 
 1. Read the `x-aem-cug-required` header — if `true`, verify the visitor is logged in.
 2. Read the `x-aem-cug-groups` header — if present, verify the visitor belongs to at least one of the listed groups.
-3. Redirect unauthenticated visitors to a login page, or return a 403 Forbidden for unauthorized visitors.
+3. Optionally read the `x-aem-cug-login-path` header to redirect to a per-path login page instead of a default one (not implemented by the reference workers in this repo — see the worker support note under Quick Start).
+4. Redirect unauthenticated visitors to a login page, or return a 403 Forbidden for unauthorized visitors.
 
 For implementation details, see the [CUG Developer Guide](CUG_DEVELOPER_GUIDE.md).
 

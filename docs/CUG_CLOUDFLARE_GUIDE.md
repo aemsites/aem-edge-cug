@@ -345,3 +345,4 @@ The only requirement is that the groups stored in the session JWT match the valu
 ## See Also
 
 - [Akamai CUG Worker Setup](CUG_AKAMAI_GUIDE.md) — alternative CDN implementation using Akamai EdgeWorkers
+- [adobe-rnd/aem-cloudflare-worker-with-cug](https://github.com/adobe-rnd/aem-cloudflare-worker-with-cug) — the original starter code template this worker's CUG header handling and `isAuthorized` extension point are based on
