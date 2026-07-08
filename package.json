@@ -12,6 +12,8 @@
     "build:json:models": "merge-json-cli -i \"models/_component-models.json\" -o \"component-models.json\"",
     "build:json:definitions": "merge-json-cli -i \"models/_component-definition.json\" -o \"component-definition.json\"",
     "build:json:filters": "merge-json-cli -i \"models/_component-filters.json\" -o \"component-filters.json\"",
+    "md-to-gdocs": "node tools/md-to-gdocs/convert.mjs",
+    "test:md-to-gdocs": "node --test tools/md-to-gdocs/test/*.test.mjs",
     "prepare": "husky"
   },
   "repository": {
@@ -32,6 +34,7 @@
     "eslint-plugin-json": "3.1.0",
     "eslint-plugin-xwalk": "github:adobe-rnd/eslint-plugin-xwalk",
     "husky": "9.1.1",
+    "markdown-it": "^14.3.0",
     "merge-json-cli": "1.0.4",
     "npm-run-all": "4.1.5",
     "stylelint": "17.0.0",
