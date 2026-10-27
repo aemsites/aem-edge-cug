@@ -1,8 +1,8 @@
 /**
  * CUG (Closed User Group) access control.
  *
- * Reads x-aem-cug-required and x-aem-cug-groups headers from the origin
- * response and enforces authentication and email-domain-based authorization.
+ * Reads CUG values from origin headers or HTML metadata and enforces
+ * authentication and email-domain-based authorization.
  *
  * Group matching uses the user's email domain (e.g., "adobe.com") against
  * the comma-separated domains in x-aem-cug-groups. Access is granted if the
@@ -11,17 +11,68 @@
 
 import { redirectToLogin } from './oauth.js';
 
+/**
+ * Extract quoted name/content attributes from simple HTML meta tags.
+ * Returns Headers for shared enforcement with the header-based policy.
+ */
+export function extractCugMetadata(html) {
+  const headers = new Headers();
+  const tags = html.match(/<meta\b(?:[^"'<>]|"[^"]*"|'[^']*')*>/gi) || [];
+  tags.forEach((tag) => {
+    const attributes = {};
+    const pattern = /\s([a-z][\w:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+    let match = pattern.exec(tag);
+    while (match) {
+      attributes[match[1].toLowerCase()] = match[2] ?? match[3];
+      match = pattern.exec(tag);
+    }
+    const name = (attributes.name || '').toLowerCase();
+    if (['cug-required', 'cug-groups', 'cug-login-path'].includes(name)
+        && attributes.content !== undefined && !headers.has(`x-aem-${name}`)) {
+      headers.set(`x-aem-${name}`, attributes.content);
+    }
+  });
+  return headers;
+}
+
 export async function checkCugAccess(originResponse, session, request, env) {
-  const cugRequired = originResponse.headers.get('x-aem-cug-required');
-  const cugGroups = originResponse.headers.get('x-aem-cug-groups');
+  const source = env.CUG_SOURCE ?? 'headers';
+  if (!['headers', 'metadata'].includes(source)) {
+    throw new Error('Invalid CUG_SOURCE: expected headers or metadata');
+  }
+  let response = originResponse;
+  let policy = response.headers;
+  const contentType = response.headers.get('content-type') || '';
+  if (source === 'metadata' && /^text\/html(?:\s*;|\s*$)/i.test(contentType)) {
+    const html = await response.text();
+    policy = extractCugMetadata(html);
+    response = new Response(html, response);
+    response.headers.delete('content-encoding');
+    response.headers.delete('content-length');
+  }
+  const cugRequired = policy.get('x-aem-cug-required');
+  const cugGroups = policy.get('x-aem-cug-groups');
 
   // No CUG protection on this path — serve publicly
   if (cugRequired !== 'true') {
-    return stripCugHeaders(originResponse);
+    return stripCugHeaders(response);
   }
 
   // CUG required but no session — redirect to login
   if (!session) {
+    const loginPath = policy.get('x-aem-cug-login-path');
+    if (loginPath) {
+      if (!/^(?:\/(?![\\/])|https?:\/\/)/i.test(loginPath) || /[\r\n\\]/.test(loginPath)) {
+        throw new Error('Invalid cug-login-path: expected a local path or HTTP(S) URL');
+      }
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: new URL(loginPath, request.url).href,
+          'Cache-Control': 'private, no-store',
+        },
+      });
+    }
     return redirectToLogin(request.url, env);
   }
 
@@ -36,7 +87,7 @@ export async function checkCugAccess(originResponse, session, request, env) {
     }
   }
 
-  const resp = stripCugHeaders(originResponse);
+  const resp = stripCugHeaders(response);
   resp.headers.set('Cache-Control', 'private, no-store');
   return resp;
 }
@@ -46,5 +97,6 @@ function stripCugHeaders(response) {
   const resp = new Response(response.body, response);
   resp.headers.delete('x-aem-cug-required');
   resp.headers.delete('x-aem-cug-groups');
+  resp.headers.delete('x-aem-cug-login-path');
   return resp;
 }

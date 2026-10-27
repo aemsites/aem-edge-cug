@@ -2,6 +2,33 @@
 
 This setup enables Closed User Group (CUG) protection for AEM Edge Delivery sites served through Cloudflare. It deploys a Cloudflare Worker that sits between the browser and the AEM origin, authenticating users via Adobe IMS (OAuth 2.0 + PKCE) and enforcing per-path access control based on CUG headers published from AEM Author or Document Authoring (DA). Protected pages are never delivered to unauthenticated or unauthorized users — the worker intercepts the origin response at the edge and gates access before any content reaches the browser.
 
+## CUG Policy Source
+
+The generic worker supports the same policy-source option as the Akamai worker.
+Set `CUG_SOURCE` in `workers/cloudflare/cug-cloudflare-worker/wrangler.toml`
+under `[vars]` (or `[env.summit.vars]` when deploying with `--env summit`).
+
+| Value | Behavior |
+|-------|----------|
+| `"headers"` (default, including when unset) | Read `x-aem-cug-required`, `x-aem-cug-groups`, and `x-aem-cug-login-path` from origin response headers. Responses remain streamed. |
+| `"metadata"` | For `text/html` responses, read `cug-required`, `cug-groups`, and `cug-login-path` from HTML meta tags instead of headers. Non-HTML responses still use headers. |
+
+```html
+<meta name="cug-required" content="true">
+<meta name="cug-groups" content="adobe.com, example.com">
+<meta name="cug-login-path" content="/login">
+```
+
+Only the exact value `true` requires authentication. Groups are optional and comma-separated; any matching session group grants access. The optional login path redirects unauthenticated visitors to a local path or absolute HTTP(S) URL. Without it, the existing IMS OAuth flow is used. Keep custom login pages public to avoid redirect loops. All three CUG response headers are stripped from policy-checked responses in either mode.
+
+Extraction uses simple regexes for quoted `name` and `content` attributes, with either quote style, case-insensitive tag/attribute names, and either attribute order. The first occurrence of each policy wins. This is not a full HTML parser: use literal attribute values, not HTML entities, and publish policy tags in the page head.
+
+**Important:** Metadata mode replaces the header policy for HTML. HTML without `cug-required=true` metadata is public even if CUG headers are present. Publish metadata on every HTML representation that needs protection (including alternate/fragment representations), or keep using header mode. Metadata does not inherit spreadsheet path rules automatically. Existing media and RUM bypasses remain unchanged. The Frescopa B2B worker is not affected by this option.
+
+HTML is buffered before authorization and replayed only when access is allowed. This adds latency and memory use compared with streaming; ensure pages fit Cloudflare Worker resource limits. HEAD requests fetch the origin with GET in metadata mode to check the same policy, but return no body. A body-read failure is logged and returns HTTP 500 rather than serving unchecked HTML.
+
+Run regression tests with `npm test` from `workers/cloudflare/cug-cloudflare-worker`. Validate the deployed worker on staging as well.
+
 ## Architecture
 
 ```

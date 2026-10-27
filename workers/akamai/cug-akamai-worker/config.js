@@ -1,6 +1,7 @@
 import secrets from './secrets.js';
 
 const config = {
+  CUG_SOURCE: 'headers',
   ORIGIN_HOSTNAME: 'main--aem-edge-cug-akamai--aemsites.aem.live',
   OAUTH_AUTHORIZE_URL: 'https://ims-na1.adobelogin.com/ims/authorize/v2',
   OAUTH_TOKEN_PATH: '/ims/token/v3',

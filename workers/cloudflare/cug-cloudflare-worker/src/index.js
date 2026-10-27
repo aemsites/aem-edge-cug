@@ -9,7 +9,7 @@
  *   /auth/portal       — Redirects authenticated user based on group mapping
  *   /auth/me           — Returns current user info as JSON (email, name, groups)
  *   RUM / media        — Passed through to origin without auth
- *   Everything else    — Proxied to origin, then CUG headers are checked
+ *   Everything else    — Proxied to origin, then CUG policy is checked
  */
 
 import { redirectToLogin, handleCallback } from './oauth.js';
@@ -30,7 +30,7 @@ const isRUMRequest = (url) => /\/\.(rum|optel)\/.*/.test(url.pathname);
  * Rewrites the request to the AEM Edge Delivery origin and fetches the response.
  * Sanitizes query params per resource type and enables Cloudflare edge caching.
  */
-async function proxyToOrigin(request, env, url) {
+async function proxyToOrigin(request, env, url, readMetadata = false) {
   const extension = getExtension(url.pathname);
   const savedSearch = url.search;
   const { searchParams } = url;
@@ -63,9 +63,12 @@ async function proxyToOrigin(request, env, url) {
   if (env.ORIGIN_AUTHENTICATION) {
     req.headers.set('authorization', `token ${env.ORIGIN_AUTHENTICATION}`);
   }
+  if (readMetadata) {
+    req.headers.set('accept-encoding', 'identity');
+  }
 
   let resp = await fetch(req, {
-    method: req.method,
+    method: readMetadata && req.method === 'HEAD' ? 'GET' : req.method,
     cf: { cacheEverything: true },
   });
   resp = new Response(resp.body, resp);
@@ -175,9 +178,10 @@ const handleRequest = async (request, env) => {
 
   // All other requests: fetch from origin, then enforce CUG access control
   const session = await getSession(request, env);
-  const originResponse = await proxyToOrigin(request, env, url);
+  const originResponse = await proxyToOrigin(request, env, url, env.CUG_SOURCE === 'metadata');
 
-  return checkCugAccess(originResponse, session, request, env);
+  const response = await checkCugAccess(originResponse, session, request, env);
+  return request.method === 'HEAD' ? new Response(null, response) : response;
 };
 
 export default {

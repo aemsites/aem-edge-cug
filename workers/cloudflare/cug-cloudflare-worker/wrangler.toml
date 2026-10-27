@@ -3,6 +3,7 @@ main = "src/index.js"
 compatibility_date = "2024-12-01"
 
 [vars]
+CUG_SOURCE = "headers" # Set to "metadata" to read CUG meta tags from HTML.
 ORIGIN_HOSTNAME = "main--cloudfare1--jckautzmann.aem.live"
 OAUTH_AUTHORIZE_URL = "https://ims-na1.adobelogin.com/ims/authorize/v2"
 OAUTH_TOKEN_URL = "https://ims-na1.adobelogin.com/ims/token/v3"
@@ -30,6 +31,7 @@ id = "a7cb2b4bb8f54391b7ae50fa1cd43749"
 name = "summit-portal"
 
 [env.summit.vars]
+CUG_SOURCE = "headers"
 ORIGIN_HOSTNAME = "main--summit-portal--aemsites.aem.live"
 OAUTH_AUTHORIZE_URL = "https://ims-na1.adobelogin.com/ims/authorize/v2"
 OAUTH_TOKEN_URL = "https://ims-na1.adobelogin.com/ims/token/v3"
