@@ -114,6 +114,101 @@ describe('index (request routing)', () => {
       expect(resp.headers.get('Location')).toContain(env.OAUTH_AUTHORIZE_URL);
     });
 
+    describe('metadata policy mode', () => {
+      const html = `<html><head>
+        <meta name="cug-required" content="true">
+        <meta name="cug-groups" content="adobe.com">
+      </head><body>Secret</body></html>`;
+
+      it('enforces metadata on a normal request', async () => {
+        env.CUG_SOURCE = 'metadata';
+        vi.stubGlobal('fetch', mockOriginFetch(html));
+        const resp = await worker.fetch(new Request('https://mysite.com/members'), env);
+        expect(resp.status).toBe(302);
+        expect(resp.headers.get('Location')).toContain(env.OAUTH_AUTHORIZE_URL);
+        expect(await resp.text()).not.toContain('Secret');
+      });
+
+      it('fetches GET for anonymous HEAD requests to enforce the HTML policy', async () => {
+        env.CUG_SOURCE = 'metadata';
+        const fetchOrigin = mockOriginFetch(html);
+        vi.stubGlobal('fetch', fetchOrigin);
+        const resp = await worker.fetch(new Request('https://mysite.com/members', { method: 'HEAD' }), env);
+        expect(fetchOrigin.mock.calls[0][1].method).toBe('GET');
+        expect(fetchOrigin.mock.calls[0][0].headers.get('accept-encoding')).toBe('identity');
+        expect(resp.status).toBe(302);
+        expect(await resp.text()).toBe('');
+      });
+
+      it('returns no body on authorized HEAD requests', async () => {
+        env.CUG_SOURCE = 'metadata';
+        vi.stubGlobal('fetch', mockOriginFetch(html));
+        const { createSession } = await import('../src/session.js');
+        const token = await createSession(env, {
+          email: 'alice@adobe.com', name: 'Alice', groups: ['adobe.com'],
+        });
+        const resp = await worker.fetch(new Request('https://mysite.com/members', {
+          method: 'HEAD',
+          headers: { Cookie: `auth_token=${token}` },
+        }), env);
+        expect(resp.status).toBe(200);
+        expect(resp.headers.get('cache-control')).toBe('private, no-store');
+        expect(await resp.text()).toBe('');
+      });
+
+      it('leaves header-mode HEAD requests as HEAD', async () => {
+        const fetchOrigin = mockOriginFetch('', { 'x-aem-cug-required': 'true' });
+        vi.stubGlobal('fetch', fetchOrigin);
+        const resp = await worker.fetch(new Request('https://mysite.com/members', { method: 'HEAD' }), env);
+        expect(fetchOrigin.mock.calls[0][1].method).toBe('HEAD');
+        expect(resp.status).toBe(302);
+        expect(await resp.text()).toBe('');
+      });
+
+      it.each([
+        '/.rum/collect',
+        '/media_0123456789abcdef0123456789abcdef01234567.png',
+      ])('preserves the auth bypass for %s', async (path) => {
+        env.CUG_SOURCE = 'metadata';
+        vi.stubGlobal('fetch', mockOriginFetch(html));
+        const resp = await worker.fetch(new Request(`https://mysite.com${path}`), env);
+        expect(resp.status).toBe(200);
+        expect(await resp.text()).toBe(html);
+      });
+
+      it('logs body-read errors and returns 500 instead of unchecked content', async () => {
+        env.CUG_SOURCE = 'metadata';
+        const body = new ReadableStream({
+          start(controller) { controller.error(new Error('Body read failed')); },
+        });
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, {
+          headers: { 'content-type': 'text/html' },
+        })));
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+          const resp = await worker.fetch(new Request('https://mysite.com/members'), env);
+          expect(resp.status).toBe(500);
+          expect(await resp.text()).toBe('Internal Server Error');
+          expect(spy).toHaveBeenCalledWith('Unhandled worker error:', expect.stringContaining('Body read failed'));
+        } finally {
+          spy.mockRestore();
+        }
+      });
+
+      it('logs invalid source configuration and returns 500', async () => {
+        env.CUG_SOURCE = 'invalid';
+        vi.stubGlobal('fetch', mockOriginFetch(html));
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+          const resp = await worker.fetch(new Request('https://mysite.com/members'), env);
+          expect(resp.status).toBe(500);
+          expect(spy).toHaveBeenCalledWith('Unhandled worker error:', expect.stringContaining('Invalid CUG_SOURCE'));
+        } finally {
+          spy.mockRestore();
+        }
+      });
+    });
+
     it('serves content when session exists and CUG is satisfied', async () => {
       vi.stubGlobal('fetch', mockOriginFetch('<html>members</html>', {
         'x-aem-cug-required': 'true',

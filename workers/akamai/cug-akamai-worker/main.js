@@ -14,7 +14,7 @@ import { createResponse } from 'create-response';
 import config, { getSecrets } from './config.js';
 import { createSession, getSession, sessionCookie, clearSessionCookie } from './session.js';
 import { redirectToLogin, handleCallback } from './oauth.js';
-import { checkCugAccess } from './cug.js';
+import { checkCugAccess, extractCugMetadata } from './cug.js';
 import { buildUrl, isMediaRequest, isRUMRequest, sanitizeSearchParams } from './utils.js';
 
 const SKIP_RESPONSE_HEADERS = new Set([
@@ -22,7 +22,7 @@ const SKIP_RESPONSE_HEADERS = new Set([
   'te', 'trailers', 'transfer-encoding',
   'host', 'content-length', 'vary',
   'age', 'x-robots-tag',
-  'x-aem-cug-required', 'x-aem-cug-groups',
+  'x-aem-cug-required', 'x-aem-cug-groups', 'x-aem-cug-login-path',
 ]);
 
 function buildResponseHeaders(originHeaders) {
@@ -35,7 +35,7 @@ function buildResponseHeaders(originHeaders) {
   return result;
 }
 
-async function proxyToOrigin(request, url) {
+async function proxyToOrigin(request, url, readMetadata = false) {
   const savedSearch = url.search;
   const sanitizedSearch = sanitizeSearchParams(url.pathname, url.search);
   const originUrl = `https://${request.host}${url.pathname}${sanitizedSearch}`;
@@ -45,6 +45,9 @@ async function proxyToOrigin(request, url) {
     'x-byo-cdn-type': 'akamai',
     'x-push-invalidation': 'enabled',
   };
+  if (readMetadata) {
+    reqHeaders['accept-encoding'] = 'identity';
+  }
 
   const secrets = await getSecrets();
   if (secrets.ORIGIN_AUTHENTICATION) {
@@ -52,12 +55,20 @@ async function proxyToOrigin(request, url) {
   }
 
   const originResp = await httpRequest(originUrl, {
-    method: request.method,
+    method: readMetadata && request.method === 'HEAD' ? 'GET' : request.method,
     headers: reqHeaders,
   });
 
   const originHeaders = originResp.getHeaders();
   const respHeaders = buildResponseHeaders(originHeaders);
+  let { body } = originResp;
+  let cugHeaders = originHeaders;
+  const contentType = (originHeaders['content-type'] || [''])[0];
+  if (readMetadata && /^text\/html(?:\s*;|\s*$)/i.test(contentType)) {
+    body = await originResp.text();
+    cugHeaders = extractCugMetadata(body);
+    delete respHeaders['content-encoding'];
+  }
 
   if (originResp.status === 301 && savedSearch) {
     const location = (originHeaders.location || [])[0];
@@ -73,8 +84,8 @@ async function proxyToOrigin(request, url) {
   return {
     status: originResp.status,
     headers: respHeaders,
-    body: originResp.body,
-    rawHeaders: originHeaders,
+    body: request.method === 'HEAD' ? '' : body,
+    cugHeaders,
   };
 }
 
@@ -158,14 +169,23 @@ export async function responseProvider(request) {
     }
 
     // --- All other requests: proxy then enforce CUG ---
+    if (!['headers', 'metadata'].includes(config.CUG_SOURCE)) {
+      throw new Error('Invalid CUG_SOURCE: expected headers or metadata');
+    }
     const cookieHeader = (request.getHeader('Cookie') || [])[0] || '';
     const session = await getSession(cookieHeader, secrets.JWT_SECRET);
-    const origin = await proxyToOrigin(request, url);
+    const origin = await proxyToOrigin(request, url, config.CUG_SOURCE === 'metadata');
 
-    const { action } = checkCugAccess(origin.rawHeaders, session);
+    const { action, loginPath } = checkCugAccess(origin.cugHeaders, session);
 
     switch (action) {
       case 'login': {
+        if (loginPath) {
+          return createResponse(302, {
+            Location: loginPath,
+            'Cache-Control': 'private, no-store',
+          }, '');
+        }
         const loginResp = await redirectToLogin(request.url, secrets.JWT_SECRET);
         return createResponse(loginResp.status, loginResp.headers, loginResp.body);
       }
